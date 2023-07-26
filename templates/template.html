@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关键词生成器</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <style>
+    body {
+        background-color: #d9eef7;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+    }
+    .container {
+        max-width: 600px;
+        margin: 0 auto;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        background-color: white;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+        font-weight: bold;
+        margin-bottom: 1rem;
+        color: #3a8ec1;
+    }
+    button {
+        background-color: #3a8ec1;
+        color: white;
+    }
+
+    button:hover {
+        background-color: #2678ac;
+    }
+    #keywords {
+        margin-top: 1rem;
+        font-weight: bold;
+    }
+    loading-icon {
+      border: 5px solid #f3f3f3; /* 外边框 */
+      border-top: 5px solid #3498db; /* 顶部边框 */
+      border-radius: 50%; /* 圆角 */
+      width: 30px; /* 宽度 */
+      height: 30px; /* 高度 */
+      animation: spin 1s linear infinite; /* 旋转动画 */
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1>关键词生成器</h1>
+        <!-- 文本域 -->
+        <textarea id="text-input" class="form-control" rows="10" placeholder="在这里输入文本或选择文件加载文本"></textarea>
+        <!-- 选择TXT文件  -->
+        <div class="custom-file mt-3">
+            <input type="file" class="custom-file-input" id="file-input" accept=".txt">
+            <label class="custom-file-label" for="file-input">选择TXT文件</label>
+        </div>
+        <!--   生成关键词button   -->
+            <button id="generate-keywords" class="btn mt-3">生成关键词</button>
+        <!--   结果输出域  -->
+            <textarea id="keywords" name="keywords" class="form-control" rows="6" placeholder="在此生成关键词短语"></textarea>
+            <div id="loading-icon" class="loading-icon" style="display: none;"></div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('text-input');
+        const fileInput = document.getElementById('file-input');
+        const generateKeywordsButton = document.getElementById('generate-keywords');
+        const keywordsInput = document.getElementById('keywords');
+        const loadingIcon = document.getElementById('loading-icon');
+
+        <!--文本输入框-->
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                textInput.value = e.target.result;
+            };
+            reader.readAsText(file);
+            // 更新选择的文件名
+            event.target.nextElementSibling.innerText = file.name;
+        });
+
+        <!--生成关键词按钮-->
+        generateKeywordsButton.addEventListener('click', function() {
+            const text = textInput.value.trim();
+            if (text === '') {
+                alert('请输入文本或选择文件加载文本');
+                return;
+            }
+            generateKeywords(text);
+        });
+
+        <!--生成关键词函数，调用后端flask框架-->
+        function generateKeywords(text) {
+            // 显示加载图标，隐藏文本框
+            keywordsInput.style.display = 'none';
+            loadingIcon.style.display = 'block';
+            // 调用后端API
+            fetch('/generate-keywords', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'text=' + encodeURIComponent(text),
+            })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then((keywords) => {
+<!--                keywordsInput.innerText = keywords.join(', ');-->
+<!--                    keywordsInput.innerText = keywords;-->
+                    keywordsInput.value = keywords;
+            })
+            .catch((error) => {
+                console.error('There was a problem with the fetch operation:', error);
+            });
+            // 查询关键词完成后显示<textarea>，隐藏循环加载图标
+            keywordsInput.style.display = 'block';
+            loadingIcon.style.display = 'none';
+        }
+    </script>
+
+</body>
+</html>
